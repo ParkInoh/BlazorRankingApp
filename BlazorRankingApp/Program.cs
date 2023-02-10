@@ -28,7 +28,11 @@ namespace BlazorRankingApp
             builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
 
             // 랭킹 서비스 dependency
-            builder.Services.AddScoped<RankingService>();
+            builder.Services.AddHttpClient<RankingService>(c =>
+            {
+                // 포트 번호는 WebAPI의 Properties/launchSettings.json의 sslPort이다.
+                c.BaseAddress = new Uri("https://localhost:44357");
+            });
 
             var app = builder.Build();
 

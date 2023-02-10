@@ -1,6 +1,6 @@
 ﻿@page "/ranking"
 
-@using BlazorRankingApp.Data.Models
+@using SharedData.Models
 @using BlazorRankingApp.Data.Services
 
 @inject RankingService RankingService
@@ -116,12 +116,12 @@
 		if (_gameResult.Id == 0)
 		{
 			_gameResult.Date = DateTime.Now;
-			var result = RankingService.AddGameResult(_gameResult);
+			var result = await RankingService.AddGameResult(_gameResult);
 		}
 		// 기존 데이터를 수정하는 경우
 		else
 		{
-			var result = RankingService.UpdateGameResult(_gameResult);
+			var result = await RankingService.UpdateGameResult(_gameResult);
 		}
 
 		_showPopup = false;

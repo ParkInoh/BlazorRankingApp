@@ -1,69 +1,73 @@
-﻿using BlazorRankingApp.Data.Models;
+﻿using Newtonsoft.Json;
+using SharedData.Models;
+using System.Text;
 
 namespace BlazorRankingApp.Data.Services
 {
     public class RankingService
     {
-        ApplicationDbContext _context;
+        HttpClient _httpClient;
 
-        public RankingService(ApplicationDbContext context)
+        public RankingService(HttpClient client)
         {
-            _context = context;
+            _httpClient= client;
         }
 
         // Create
-        public Task<GameResult> AddGameResult(GameResult gameResult)
+        public async Task<GameResult> AddGameResult(GameResult gameResult)
         {
-            _context.GameResults.Add(gameResult);
-            _context.SaveChanges();
+            // Post
+            string jsonStr = JsonConvert.SerializeObject(gameResult);
+            var content = new StringContent(jsonStr, Encoding.UTF8, "application/json");
+            var result = await _httpClient.PostAsync("api/ranking", content);
 
-            return Task.FromResult(gameResult);
+            // 실패
+            if (result.IsSuccessStatusCode == false)
+                throw new Exception("AddGameResult failed.");
+
+            var resultContent = await result.Content.ReadAsStringAsync();
+            // GameResult로 변환
+            GameResult resultGameResult = JsonConvert.DeserializeObject<GameResult>(resultContent);
+
+            return resultGameResult;
         }
 
         // Read
-        public Task<List<GameResult>> GetGameResultsAsync()
+        public async Task<List<GameResult>> GetGameResultsAsync()
         {
-            List<GameResult> results = _context.GameResults
-                                       .OrderByDescending(item => item.Score)
-                                       .ToList();
+            var result = await _httpClient.GetAsync("api/ranking");
 
-            return Task.FromResult(results);
+            var resultContent = await result.Content.ReadAsStringAsync();
+            // List<GameResult>로 변환
+            List<GameResult> resultGameResults = JsonConvert.DeserializeObject<List<GameResult>>(resultContent);
+            return resultGameResults;
         }
 
         // Update
-        public Task<bool> UpdateGameResult(GameResult gameResult)
+        public async Task<bool> UpdateGameResult(GameResult gameResult)
         {
-            // Id가 같은 항목 찾음
-            var findResult = _context.GameResults
-                             .Where(x => x.Id == gameResult.Id)
-                             .FirstOrDefault();
+            // Post
+            string jsonStr = JsonConvert.SerializeObject(gameResult);
+            var content = new StringContent(jsonStr, Encoding.UTF8, "application/json");
+            var result = await _httpClient.PutAsync("api/ranking", content);
 
-            // Id가 같은 항목이 없는 경우
-            if (findResult == null)
-                return Task.FromResult(false);
+            // 실패
+            if (result.IsSuccessStatusCode == false)
+                throw new Exception("UpdateGameResult failed.");
 
-            findResult.UserName = gameResult.UserName;
-            findResult.Score = gameResult.Score;
-            _context.SaveChanges();
-
-            return Task.FromResult(true);
+            return true;
         }
 
         // Delete
-        public Task<bool> DeleteGameResult(GameResult gameResult)
+        public async Task<bool> DeleteGameResult(GameResult gameResult)
         {
-            var findResult = _context.GameResults
-                             .Where(x => x.Id == gameResult.Id)
-                             .FirstOrDefault();
+            var result = await _httpClient.DeleteAsync($"api/ranking/{gameResult.Id}");
 
-            // Id가 같은 항목이 없는 경우
-            if (findResult == null)
-                return Task.FromResult(false);
+            // 실패
+            if (result.IsSuccessStatusCode == false)
+                throw new Exception("DeleteGameResult failed.");
 
-            _context.GameResults.Remove(gameResult);
-            _context.SaveChanges();
-
-            return Task.FromResult(true);
+            return true;
         }
     }
 }
